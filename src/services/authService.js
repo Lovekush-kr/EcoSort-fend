@@ -16,13 +16,26 @@ import { apiRequest, setAuthToken, removeAuthToken, getAuthToken } from './api.j
  * @param {string} credentials.password
  * @returns {Promise<object>} Registration response
  *
- * NOTE: Backend currently returns 503 for registration due to email
- * verification service being unavailable. This is a backend blocker.
  */
 export async function register({ name, email, password }) {
   return apiRequest('/api/auth/register', {
     method: 'POST',
     body: { name, email, password },
+  });
+}
+
+/**
+ * Verify the registration OTP sent to the user's email.
+ *
+ * @param {object} credentials
+ * @param {string} credentials.email
+ * @param {string} credentials.otp
+ * @returns {Promise<object>} Verification response
+ */
+export async function verifyOtp({ email, otp }) {
+  return apiRequest('/api/auth/verify-otp', {
+    method: 'POST',
+    body: { email, otp },
   });
 }
 
@@ -34,8 +47,8 @@ export async function register({ name, email, password }) {
  * @param {string} credentials.password
  * @returns {Promise<object>} Login response with token
  *
- * Expected response (verify when endpoint works):
- * { success: true, token: "...", user: { ... } }
+ * Backend response:
+ * { success: true, accessToken: "...", refreshToken: "...", user: { ... } }
  */
 export async function login({ email, password }) {
   const data = await apiRequest('/api/auth/login', {
@@ -74,4 +87,3 @@ export function logout() {
 export function hasToken() {
   return !!getAuthToken();
 }
-

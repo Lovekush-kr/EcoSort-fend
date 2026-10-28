@@ -19,6 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
+  const verifiedEmail = location.state?.email;
 
   function validate() {
     const errors = {};
@@ -58,6 +59,12 @@ export default function Login() {
             <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
             <p className="text-sm text-gray-500 mt-1">Sign in to your EcoSort AI account</p>
           </div>
+
+          {location.state?.verified && (
+            <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700" role="status">
+              Email verified successfully. You can now sign in{verifiedEmail ? ` as ${verifiedEmail}` : ''}.
+            </div>
+          )}
 
           {/* Mascot 6 — Unsuccessful Login / Authentication Error */}
           {error && (
@@ -145,4 +152,3 @@ export default function Login() {
     </PageContainer>
   );
 }
-

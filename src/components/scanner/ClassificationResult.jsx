@@ -47,10 +47,16 @@ export default function ClassificationResult({ result, imagePreview, onScanAgain
   // Extract fields — try multiple possible field names
   const category = getField(result, 'category', 'prediction', 'class', 'label', 'waste_type', 'wasteType');
   const confidence = getField(result, 'confidence', 'confidence_score', 'score', 'probability');
+  const message = getField(result, 'message');
   const guidance = getField(result, 'guidance', 'disposal_guidance', 'disposalGuidance', 'disposal', 'recommendation');
   const steps = getField(result, 'steps', 'disposal_steps', 'disposalSteps', 'instructions');
   const description = getField(result, 'description', 'details', 'info');
   const modelUnavailable = result.model_unavailable || result.modelUnavailable;
+  const confidenceNum = typeof confidence === 'number' ? confidence : Number.parseFloat(confidence);
+  const hasConfidence = Number.isFinite(confidenceNum);
+  const confidencePercent = hasConfidence
+    ? Math.round(confidenceNum * (confidenceNum <= 1 ? 100 : 1))
+    : null;
 
   // Handle model unavailable
   if (modelUnavailable) {
@@ -76,8 +82,13 @@ export default function ClassificationResult({ result, imagePreview, onScanAgain
         <Info className="w-10 h-10 text-gray-400 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Classification Result</h3>
         <p className="text-sm text-gray-500 mb-4">
-          The server returned a response but no waste category was identified.
+          {message || 'The server returned a response but no waste category was identified.'}
         </p>
+        {confidencePercent !== null && (
+          <p className="text-sm text-gray-500 mb-4">
+            Model confidence: {confidencePercent}%
+          </p>
+        )}
         <Button variant="secondary" onClick={onScanAgain}>
           <RefreshCw className="w-4 h-4" />
           Try Another Image
@@ -87,9 +98,6 @@ export default function ClassificationResult({ result, imagePreview, onScanAgain
   }
 
   const catStyle = getCategoryStyle(category);
-  const confidenceNum = typeof confidence === 'number' ? confidence : parseFloat(confidence);
-  const hasConfidence = !isNaN(confidenceNum);
-  const confidencePercent = hasConfidence ? Math.round(confidenceNum * (confidenceNum <= 1 ? 100 : 1)) : null;
   const confLevel = hasConfidence ? getConfidenceLevel(confidenceNum <= 1 ? confidenceNum : confidenceNum / 100) : null;
 
   return (
@@ -211,4 +219,3 @@ export default function ClassificationResult({ result, imagePreview, onScanAgain
     </div>
   );
 }
-

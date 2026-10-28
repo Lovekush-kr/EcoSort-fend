@@ -50,7 +50,7 @@ src/services/
 - Configured via `VITE_API_BASE_URL` in `.env.local` / `.env.example`.
 - Production Default: `https://ecosort-ai-u1ln.onrender.com`
 - Local Development: `http://localhost:5000` or Vite Proxy to Render
-- **CRITICAL CORS FACT**: The live Render backend currently responds with `Access-Control-Allow-Origin: http://localhost:3000`. Running Vite on port 5173 causes browser CORS blocks. `vite.config.js` has been configured to port `3000` with an `/api` proxy to match the backend contract.
+- **Local Development Origin**: Vite runs at `http://localhost:5173`; the local backend CORS default allows this origin. The live Render backend must also allow `http://localhost:5173` through its `FRONTEND_ORIGIN` setting when testing against it locally.
 
 ### 3.2 Endpoints & Verification Facts
 

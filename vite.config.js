@@ -6,7 +6,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 3000,
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'https://ecosort-ai-u1ln.onrender.com',

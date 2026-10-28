@@ -6,7 +6,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getCurrentUser, login as loginService, register as registerService, logout as logoutService, hasToken } from '../services/authService.js';
+import { getCurrentUser, login as loginService, register as registerService, verifyOtp as verifyOtpService, logout as logoutService, hasToken } from '../services/authService.js';
 
 const AuthContext = createContext(null);
 
@@ -59,6 +59,11 @@ export function AuthProvider({ children }) {
     return registerService(credentials);
   }, []);
 
+  const verifyOtp = useCallback(async (credentials) => {
+    setError(null);
+    return verifyOtpService(credentials);
+  }, []);
+
   const logout = useCallback(() => {
     logoutService();
     setUser(null);
@@ -72,6 +77,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     login,
     register,
+    verifyOtp,
     logout,
     setError,
   };

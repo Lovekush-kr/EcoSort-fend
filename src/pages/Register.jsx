@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, UserPlus, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, UserPlus, User, ShieldCheck } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer.jsx';
 import Button from '../components/ui/Button.jsx';
 import ErrorMessage from '../components/ui/ErrorMessage.jsx';
@@ -11,13 +11,15 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [verificationStep, setVerificationStep] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const { register } = useAuth();
+  const { register, verifyOtp } = useAuth();
+  const navigate = useNavigate();
 
   function validate() {
     const errors = {};
@@ -35,15 +37,41 @@ export default function Register() {
     if (!validate()) return;
 
     setError(null);
-    setSuccess(null);
     setLoading(true);
 
     try {
       const data = await register({ name, email, password });
-      // Registration may require email verification (backend current behavior)
-      setSuccess(data.message || 'Registration successful! Please check your email to verify your account.');
+      if (!data.success) {
+        throw new Error(data.message || 'Registration failed. Please try again.');
+      }
+      setVerificationStep(true);
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(otp)) {
+      setError('Enter the 6-digit verification code sent to your email.');
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await verifyOtp({ email: email.trim(), otp });
+      if (!data.success) {
+        throw new Error(data.message || 'OTP verification failed. Please try again.');
+      }
+      navigate('/login', {
+        replace: true,
+        state: { verified: true, email: email.trim() },
+      });
+    } catch (err) {
+      setError(err.message || 'OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,21 +86,60 @@ export default function Register() {
             <div className="w-14 h-14 bg-primary-50 border border-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 p-2.5 shadow-sm">
               <img src="/assets/Group 6.svg" alt="EcoSort AI" className="w-9 h-9 object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-sm text-gray-500 mt-1">Join EcoSort AI and start sorting smarter</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {verificationStep ? 'Verify Your Email' : 'Create Account'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {verificationStep
+                ? `Enter the 6-digit code sent to ${email}.`
+                : 'Join EcoSort AI and start sorting smarter'}
+            </p>
           </div>
 
           {error && <ErrorMessage message={error} onDismiss={() => setError(null)} className="mb-6" />}
 
-          {success && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
-              {success}
-              <Link to="/login" className="block mt-2 font-medium text-green-800 hover:underline">
-                Go to Login →
-              </Link>
-            </div>
-          )}
-
+          {verificationStep ? (
+            <form onSubmit={handleVerifyOtp} className="space-y-5">
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email verification code
+                </label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      setError(null);
+                    }}
+                    placeholder="6-digit code"
+                    aria-label="6-digit email verification code"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                  />
+                </div>
+              </div>
+              <Button type="submit" variant="primary" size="lg" loading={loading} className="w-full">
+                <ShieldCheck className="w-4 h-4" />
+                Verify Email
+              </Button>
+              <button
+                type="button"
+                className="w-full text-sm font-medium text-primary-600 hover:text-primary-700"
+                onClick={() => {
+                  setVerificationStep(false);
+                  setOtp('');
+                  setError(null);
+                }}
+              >
+                Back to registration
+              </button>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div>
@@ -154,6 +221,7 @@ export default function Register() {
               Create Account
             </Button>
           </form>
+          )}
 
           <p className="text-sm text-center text-gray-500 mt-6">
             Already have an account?{' '}
@@ -163,11 +231,12 @@ export default function Register() {
           </p>
         </div>
 
-        <p className="text-xs text-center text-gray-400 mt-4">
-          Note: Registration currently requires email verification. If registration fails, the backend email service may be temporarily unavailable.
-        </p>
+        {!verificationStep && (
+          <p className="text-xs text-center text-gray-400 mt-4">
+            You&apos;ll need to verify your email before signing in.
+          </p>
+        )}
       </div>
     </PageContainer>
   );
 }
-
